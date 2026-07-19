@@ -41,32 +41,47 @@ async function updateLocalConfig(url) {
   console.log(`✅ Local config updated: ${url}`);
 }
 
-async function pushToGitHub(url) {
+async function pushToGitHub(url, retries = 3) {
   if (!GITHUB_TOKEN) {
     console.warn('⚠️ GITHUB_TOKEN not set – skipping GitHub push');
     return;
   }
-  try {
-    const getUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-    const getResp = await axios.get(getUrl, {
-      headers: { Authorization: `token ${GITHUB_TOKEN}` }
-    });
-    const sha = getResp.data.sha;
 
-    const content = await fs.readFile(CONFIG_PATH, 'utf8');
-    const base64Content = Buffer.from(content).toString('base64');
-    const putUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-    await axios.put(putUrl, {
-      message: `chore: auto-update backend URL to ${url}`,
-      content: base64Content,
-      sha: sha,
-      branch: 'main'
-    }, {
-      headers: { Authorization: `token ${GITHUB_TOKEN}` }
-    });
-    console.log(`✅ GitHub file updated: ${url}`);
-  } catch (error) {
-    console.error('❌ GitHub API error:', error.response?.data || error.message);
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      // 1. Get the latest SHA (fresh each time)
+      const getUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+      const getResp = await axios.get(getUrl, {
+        headers: { Authorization: `token ${GITHUB_TOKEN}` }
+      });
+      const sha = getResp.data.sha;
+
+      // 2. Read the local file
+      const content = await fs.readFile(CONFIG_PATH, 'utf8');
+      const base64Content = Buffer.from(content).toString('base64');
+
+      // 3. Update the file
+      const putUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+      await axios.put(putUrl, {
+        message: `chore: auto-update backend URL to ${url}`,
+        content: base64Content,
+        sha: sha,
+        branch: 'main'
+      }, {
+        headers: { Authorization: `token ${GITHUB_TOKEN}` }
+      });
+      console.log(`✅ GitHub file updated: ${url}`);
+      return; // Success – exit the function
+
+    } catch (error) {
+      if (error.response?.status === 409 && attempt < retries) {
+        console.log(`⚠️ Conflict on attempt ${attempt}, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1 second
+      } else {
+        console.error('❌ GitHub API error:', error.response?.data || error.message);
+        return;
+      }
+    }
   }
 }
 
