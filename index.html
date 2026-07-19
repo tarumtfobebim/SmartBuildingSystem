@@ -378,7 +378,7 @@ async function handleLogin(){
 
     try{
 
-        const response=await fetch("config/backend.json");
+        const response = await fetch("config/backend.json?t=" + Date.now());
 
         if(!response.ok)
             throw new Error("Configuration file not found.");
