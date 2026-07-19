@@ -392,7 +392,7 @@ async function handleLogin(){
             throw new Error("Dashboard is currently unavailable.");
         }
 
-        window.location.href = backendUrl + '/ui/';
+        window.location.href = config.backend_url + '/ui/';
 
     }catch(err){
 
