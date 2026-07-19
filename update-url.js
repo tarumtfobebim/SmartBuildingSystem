@@ -5,12 +5,11 @@ const axios = require('axios');
 require('dotenv').config();
 
 const CONFIG_PATH = path.join(__dirname, 'config', 'backend.json');
-const LOG_FILE = path.join(__dirname, 'tunnel.log');  // cloudflared writes here
+const LOG_FILE = path.join(__dirname, 'tunnel.log');
 
-// GitHub settings – edit these
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPO_OWNER = 'YapWeiXuan1';          // replace with your GitHub username
-const REPO_NAME = 'SmartBuildingSystem';     // replace with your repo name
+const REPO_OWNER = 'YOUR_USERNAME';          // change
+const REPO_NAME = 'SmartBuildingSystem';     // change
 const FILE_PATH = 'config/backend.json';
 
 let lastUrl = null;
@@ -18,6 +17,18 @@ let lastUrl = null;
 function extractUrl(line) {
   const match = line.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
   return match ? match[0] : null;
+}
+
+// Read the whole log and return the last URL found
+function getLatestUrlFromLog() {
+  try {
+    const data = fs.readFileSync(LOG_FILE, 'utf8');
+    const lines = data.split('\n');
+    const urls = lines.map(extractUrl).filter(Boolean);
+    return urls.length > 0 ? urls[urls.length - 1] : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 async function updateLocalConfig(url) {
@@ -36,14 +47,12 @@ async function pushToGitHub(url) {
     return;
   }
   try {
-    // Get current file SHA
     const getUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
     const getResp = await axios.get(getUrl, {
       headers: { Authorization: `token ${GITHUB_TOKEN}` }
     });
     const sha = getResp.data.sha;
 
-    // Update file
     const content = await fs.readFile(CONFIG_PATH, 'utf8');
     const base64Content = Buffer.from(content).toString('base64');
     const putUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
@@ -61,21 +70,32 @@ async function pushToGitHub(url) {
   }
 }
 
-// Watch the tunnel log file
-chokidar.watch(LOG_FILE, { persistent: true, usePolling: false, ignoreInitial: true })
-  .on('change', async () => {
-    try {
-      const data = await fs.readFile(LOG_FILE, 'utf8');
-      const lines = data.split('\n').filter(l => l.trim());
-      const lastLine = lines[lines.length - 1];
-      const url = extractUrl(lastLine);
-      if (url && url !== lastUrl) {
-        console.log(`🔄 New URL detected: ${url}`);
-        await updateLocalConfig(url);
-        await pushToGitHub(url);
-        lastUrl = url;
-      }
-    } catch (err) { /* ignore read errors */ }
-  });
+// Main update function
+async function checkAndUpdate() {
+  const url = getLatestUrlFromLog();
+  if (url && url !== lastUrl) {
+    console.log(`🔄 New URL detected: ${url}`);
+    await updateLocalConfig(url);
+    await pushToGitHub(url);
+    lastUrl = url;
+  }
+}
 
-console.log('👀 Watching tunnel.log for changes...');
+// Watch the log file (with polling on Windows)
+const watcher = chokidar.watch(LOG_FILE, {
+  persistent: true,
+  usePolling: true,        // ✅ force polling for Windows
+  interval: 2000,          // check every 2 seconds
+  ignoreInitial: false     // ✅ process existing content on start
+});
+
+watcher.on('change', checkAndUpdate);
+watcher.on('add', checkAndUpdate);  // also run when file is created
+
+// Also run a periodic check every 10 seconds as a safety net
+setInterval(checkAndUpdate, 10000);
+
+console.log('👀 Watching tunnel.log for changes (polling enabled)...');
+
+// Initial check
+setTimeout(checkAndUpdate, 1000);
