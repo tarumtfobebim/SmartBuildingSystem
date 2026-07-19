@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Dashboard Login</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Inter',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+    background:
+        radial-gradient(circle at 20% 20%, #1d4ed8 0%, transparent 35%),
+        radial-gradient(circle at 80% 80%, #06b6d4 0%, transparent 35%),
+        linear-gradient(135deg,#050816,#0b1225,#111827);
+}
+
+/* Background */
+
+.bg{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    z-index:0;
+}
+
+.circle{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(80px);
+    opacity:.45;
+}
+
+.c1{
+    width:300px;
+    height:300px;
+    background:#2563eb;
+    left:-80px;
+    top:-80px;
+}
+
+.c2{
+    width:260px;
+    height:260px;
+    background:#06b6d4;
+    right:-70px;
+    bottom:-70px;
+}
+
+.c3{
+    width:180px;
+    height:180px;
+    background:#7c3aed;
+    left:60%;
+    top:18%;
+}
+
+/* Login Card */
+
+.card{
+
+    position:relative;
+    z-index:2;
+
+    width:460px;
+
+    padding:45px;
+
+    border-radius:24px;
+
+    background:rgba(255,255,255,.08);
+
+    backdrop-filter:blur(20px);
+
+    border:1px solid rgba(255,255,255,.12);
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+.logo{
+    width:280px;
+    height:140px;
+    margin:0 auto 20px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.logo img{
+    max-width:100%;
+    max-height:100%;
+    object-fit:contain;
+    display:block;
+}
+
+h1{
+    color:#ffffff;
+    margin-top:10px;
+    text-align:center;
+    font-size:22px;
+    font-weight:600;
+    letter-spacing:0.5px;
+}
+
+.subtitle{
+    color:#94a3b8;
+    text-align:center;
+    font-size:13px;
+    margin-top:6px;
+    margin-bottom:30px;
+}
+
+/* Inputs */
+
+.input-group{
+
+    margin-bottom:20px;
+}
+
+.input-group label{
+    display:block;
+    margin-bottom:8px;
+    color:#d7e3f4;
+    font-size:14px;
+    font-weight:500;
+    letter-spacing:0.3px;
+}
+
+.input-group input{
+
+    width:100%;
+
+    padding:16px;
+
+    border-radius:12px;
+
+    border:1px solid rgba(255,255,255,.12);
+
+    background:rgba(255,255,255,.05);
+
+    color:white;
+
+    font-size:15px;
+
+    transition:.3s;
+}
+
+.input-group input::placeholder{
+
+    color:#8b9ab5;
+}
+
+.input-group input:focus{
+
+    outline:none;
+
+    border-color:#38bdf8;
+
+    box-shadow:0 0 0 4px rgba(56,189,248,.15);
+}
+
+/* Button */
+
+button{
+
+    width:100%;
+
+    margin-top:10px;
+
+    height:56px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:linear-gradient(135deg,#38bdf8,#2563eb);
+
+    color:white;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.25s;
+}
+
+button:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 12px 25px rgba(37,99,235,.35);
+}
+
+button:active{
+
+    transform:scale(.98);
+}
+
+.loading,
+.error{
+
+    display:none;
+
+    margin-top:18px;
+
+    text-align:center;
+
+    font-size:14px;
+}
+
+.loading{
+
+    color:#d5dff3;
+}
+
+.error{
+
+    color:#ff8b8b;
+}
+
+.footer{
+
+    margin-top:28px;
+
+    text-align:center;
+
+    color:#8b9ab5;
+
+    font-size:12px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="bg">
+
+    <div class="circle c1"></div>
+    <div class="circle c2"></div>
+    <div class="circle c3"></div>
+
+</div>
+
+<div class="card">
+
+    <div class="logo">
+        <img src="smart-building.webp" alt="Smart Building Logo">
+    </div>
+
+    <h1>Dashboard Login</h1>
+
+    <div class="subtitle">
+        Sign in to access the monitoring dashboard
+    </div>
+
+<div class="input-group">
+    <label for="username">Username</label>
+    <input
+        id="username"
+        type="text"
+        placeholder="Enter your username"
+        autocomplete="username"
+        required>
+</div>
+
+<div class="input-group">
+    <label for="password">Password</label>
+    <input
+        id="password"
+        type="password"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+        required>
+</div>
+
+    <button id="loginBtn" onclick="handleLogin()">
+        Login
+    </button>
+
+    <div id="loading" class="loading">
+        Connecting to dashboard...
+    </div>
+
+    <div id="login-error" class="error">
+        Invalid username or password.
+    </div>
+
+    <div class="footer">
+        Secure Dashboard Access
+    </div>
+
+</div>
+
+<script>
+
+gsap.from(".card",{
+    y:40,
+    opacity:0,
+    duration:1,
+    ease:"power3.out"
+});
+
+gsap.to(".c1",{
+    x:50,
+    y:30,
+    repeat:-1,
+    yoyo:true,
+    duration:10,
+    ease:"sine.inOut"
+});
+
+gsap.to(".c2",{
+    x:-40,
+    y:-50,
+    repeat:-1,
+    yoyo:true,
+    duration:12,
+    ease:"sine.inOut"
+});
+
+gsap.to(".c3",{
+    y:35,
+    repeat:-1,
+    yoyo:true,
+    duration:8,
+    ease:"sine.inOut"
+});
+
+const VALID_USER="admin";
+const VALID_PASS="12345";
+
+async function handleLogin(){
+
+    const username=document.getElementById("username").value.trim();
+    const password=document.getElementById("password").value;
+
+    const loading=document.getElementById("loading");
+    const error=document.getElementById("login-error");
+    const btn=document.getElementById("loginBtn");
+
+    loading.style.display="none";
+    error.style.display="none";
+
+    if(username!==VALID_USER || password!==VALID_PASS){
+
+        error.innerText="Invalid username or password.";
+        error.style.display="block";
+        return;
+    }
+
+    btn.disabled=true;
+    btn.innerText="Signing In...";
+    loading.style.display="block";
+
+    try{
+
+        const response=await fetch("config/backend.json");
+
+        if(!response.ok)
+            throw new Error("Configuration file not found.");
+
+        const config=await response.json();
+
+        const backend=config.backend_url;
+
+        if(!backend || backend==="http://localhost:1880"){
+
+            throw new Error("Dashboard is currently unavailable.");
+        }
+
+        window.location.href=backend;
+
+    }catch(err){
+
+        loading.style.display="none";
+
+        error.innerText=err.message;
+
+        error.style.display="block";
+
+        btn.disabled=false;
+        btn.innerText="Login";
+    }
+
+}
+
+document.addEventListener("keydown",function(e){
+
+    if(e.key==="Enter")
+        handleLogin();
+
+});
+
+</script>
+
+</body>
+</html>
