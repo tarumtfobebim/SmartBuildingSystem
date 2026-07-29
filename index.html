@@ -1,311 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Smart Building Dashboard</title>
+    <title>Smart Building Dashboard</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
-<style>
-/* ===== ORIGINAL STYLES (unchanged) ===== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
-}
+    <style>
+        /* ===== ORIGINAL STYLES (unchanged) ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
-body {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    background:
-        radial-gradient(circle at 20% 20%, #1d4ed8 0%, transparent 35%),
-        radial-gradient(circle at 80% 80%, #06b6d4 0%, transparent 35%),
-        linear-gradient(135deg, #050816, #0b1225, #111827);
-}
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 20% 20%, #1d4ed8 0%, transparent 35%),
+                radial-gradient(circle at 80% 80%, #06b6d4 0%, transparent 35%),
+                linear-gradient(135deg, #050816, #0b1225, #111827);
+        }
 
-.bg {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-    z-index: 0;
-}
+        .bg {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
 
-.circle {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: .45;
-}
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: .45;
+        }
 
-.c1 { width: 300px; height: 300px; background: #2563eb; left: -80px; top: -80px; }
-.c2 { width: 260px; height: 260px; background: #06b6d4; right: -70px; bottom: -70px; }
-.c3 { width: 180px; height: 180px; background: #7c3aed; left: 60%; top: 18%; }
+        .c1 {
+            width: 300px;
+            height: 300px;
+            background: #2563eb;
+            left: -80px;
+            top: -80px;
+        }
 
-.card {
-    position: relative;
-    z-index: 2;
-    width: 460px;
-    padding: 45px;
-    border-radius: 24px;
-    background: rgba(255,255,255,.08);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,.12);
-    box-shadow: 0 20px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
+        .c2 {
+            width: 260px;
+            height: 260px;
+            background: #06b6d4;
+            right: -70px;
+            bottom: -70px;
+        }
 
-.logo {
-    width: 280px;
-    height: 140px;
-    margin: 0 auto 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.logo img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    display: block;
-}
+        .c3 {
+            width: 180px;
+            height: 180px;
+            background: #7c3aed;
+            left: 60%;
+            top: 18%;
+        }
 
-h1 {
-    color: #ffffff;
-    margin-top: 10px;
-    text-align: center;
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
+        .card {
+            position: relative;
+            z-index: 2;
+            width: 460px;
+            padding: 45px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, .08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .1);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
 
-.subtitle {
-    color: #94a3b8;
-    text-align: center;
-    font-size: 13px;
-    margin-top: 6px;
-    margin-bottom: 30px;
-}
+        .logo {
+            width: 280px;
+            height: 140px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-.input-group { margin-bottom: 20px; }
-.input-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #d7e3f4;
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-}
-.input-group input {
-    width: 100%;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,.12);
-    background: rgba(255,255,255,.05);
-    color: white;
-    font-size: 15px;
-    transition: .3s;
-}
-.input-group input::placeholder { color: #8b9ab5; }
-.input-group input:focus {
-    outline: none;
-    border-color: #38bdf8;
-    box-shadow: 0 0 0 4px rgba(56,189,248,.15);
-}
+        .logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
 
-button {
-    width: 100%;
-    margin-top: 10px;
-    height: 56px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #38bdf8, #2563eb);
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: .25s;
-}
-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 25px rgba(37,99,235,.35);
-}
-button:active { transform: scale(.98); }
+        h1 {
+            color: #ffffff;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
 
-.loading, .error {
-    display: none;
-    margin-top: 18px;
-    text-align: center;
-    font-size: 14px;
-}
-.loading { color: #d5dff3; }
-.error { color: #ff8b8b; }
+        .subtitle {
+            color: #94a3b8;
+            text-align: center;
+            font-size: 13px;
+            margin-top: 6px;
+            margin-bottom: 30px;
+        }
 
-.footer {
-    margin-top: 28px;
-    text-align: center;
-    color: #8b9ab5;
-    font-size: 12px;
-}
+        .input-group {
+            margin-bottom: 20px;
+        }
 
-/* ===== NEW: IFrame container ===== */
-#iframe-container {
-    display: none;               /* hidden until login */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 10;
-    background: #0b1020;
-}
-#iframe-container iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-#iframe-loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #d5dff3;
-    font-size: 18px;
-    z-index: 11;
-    text-align: center;
-}
-</style>
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d7e3f4;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .05);
+            color: white;
+            font-size: 15px;
+            transition: .3s;
+        }
+
+        .input-group input::placeholder {
+            color: #8b9ab5;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, .15);
+        }
+
+        button {
+            width: 100%;
+            margin-top: 10px;
+            height: 56px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #38bdf8, #2563eb);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .25s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(37, 99, 235, .35);
+        }
+
+        button:active {
+            transform: scale(.98);
+        }
+
+        .loading,
+        .error {
+            display: none;
+            margin-top: 18px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .loading {
+            color: #d5dff3;
+        }
+
+        .error {
+            color: #ff8b8b;
+        }
+
+        .footer {
+            margin-top: 28px;
+            text-align: center;
+            color: #8b9ab5;
+            font-size: 12px;
+        }
+
+        /* ===== NEW: IFrame container ===== */
+        #iframe-container {
+            display: none;
+            /* hidden until login */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            background: #0b1020;
+        }
+
+        #iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #iframe-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #d5dff3;
+            font-size: 18px;
+            z-index: 11;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="bg">
-    <div class="circle c1"></div>
-    <div class="circle c2"></div>
-    <div class="circle c3"></div>
-</div>
-
-<!-- Login Card -->
-<div class="card" id="login-card">
-    <div class="logo">
-        <img src="smart-building.webp" alt="Smart Building Logo">
-    </div>
-    <h1>Dashboard Login</h1>
-    <div class="subtitle">Sign in to access the monitoring dashboard</div>
-
-    <div class="input-group">
-        <label for="username">Username</label>
-        <input id="username" type="text" placeholder="Enter your username" autocomplete="username" required>
-    </div>
-    <div class="input-group">
-        <label for="password">Password</label>
-        <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+    <div class="bg">
+        <div class="circle c1"></div>
+        <div class="circle c2"></div>
+        <div class="circle c3"></div>
     </div>
 
-    <button id="loginBtn" onclick="handleLogin()">Login</button>
-    <div id="loading" class="loading">Connecting to dashboard...</div>
-    <div id="login-error" class="error">Invalid username or password.</div>
-    <div class="footer">Secure Dashboard Access</div>
-</div>
+    <!-- Login Card -->
+    <div class="card" id="login-card">
+        <div class="logo">
+            <img src="smart-building.webp" alt="Smart Building Logo">
+        </div>
+        <h1>Dashboard Login</h1>
+        <div class="subtitle">Sign in to access the monitoring dashboard</div>
 
-<!-- IFrame container (hidden initially) -->
-<div id="iframe-container">
-    <div id="iframe-loading">⏳ Loading dashboard…</div>
-    <iframe id="dashboard-iframe" src="" allow="same-origin"></iframe>
-</div>
+        <div class="input-group">
+            <label for="username">Username</label>
+            <input id="username" type="text" placeholder="Enter your username" autocomplete="username" required>
+        </div>
+        <div class="input-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password"
+                required>
+        </div>
 
-<script>
-// GSAP animations – keep as is
-gsap.from(".card", { y: 40, opacity: 0, duration: 1, ease: "power3.out" });
-gsap.to(".c1", { x: 50, y: 30, repeat: -1, yoyo: true, duration: 10, ease: "sine.inOut" });
-gsap.to(".c2", { x: -40, y: -50, repeat: -1, yoyo: true, duration: 12, ease: "sine.inOut" });
-gsap.to(".c3", { y: 35, repeat: -1, yoyo: true, duration: 8, ease: "sine.inOut" });
+        <button id="loginBtn" onclick="handleLogin()">Login</button>
+        <div id="loading" class="loading">Connecting to dashboard...</div>
+        <div id="login-error" class="error">Invalid username or password.</div>
+        <div class="footer">Secure Dashboard Access</div>
+    </div>
 
-const VALID_USER = "admin";
-const VALID_PASS = "12345";
+    <!-- IFrame container (hidden initially) -->
+    <div id="iframe-container">
+        <div id="iframe-loading">⏳ Loading dashboard…</div>
+        <iframe id="dashboard-iframe" src="" allow="same-origin"></iframe>
+    </div>
 
-async function handleLogin() {
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
-    const loading = document.getElementById("loading");
-    const error = document.getElementById("login-error");
-    const btn = document.getElementById("loginBtn");
+    <script>
+        // GSAP animations – keep as is
+        gsap.from(".card", { y: 40, opacity: 0, duration: 1, ease: "power3.out" });
+        gsap.to(".c1", { x: 50, y: 30, repeat: -1, yoyo: true, duration: 10, ease: "sine.inOut" });
+        gsap.to(".c2", { x: -40, y: -50, repeat: -1, yoyo: true, duration: 12, ease: "sine.inOut" });
+        gsap.to(".c3", { y: 35, repeat: -1, yoyo: true, duration: 8, ease: "sine.inOut" });
 
-    loading.style.display = "none";
-    error.style.display = "none";
+        const VALID_USER = "admin";
+        const VALID_PASS = "12345";
 
-    if (username !== VALID_USER || password !== VALID_PASS) {
-        error.innerText = "Invalid username or password.";
-        error.style.display = "block";
-        return;
-    }
+        async function handleLogin() {
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value;
+            const loading = document.getElementById("loading");
+            const error = document.getElementById("login-error");
+            const btn = document.getElementById("loginBtn");
 
-    btn.disabled = true;
-    btn.innerText = "Signing In…";
-    loading.style.display = "block";
+            loading.style.display = "none";
+            error.style.display = "none";
 
-    try {
-        const response = await fetch("config/backend.json?t=" + Date.now());
-        if (!response.ok) throw new Error("Configuration file not found.");
+            if (username !== VALID_USER || password !== VALID_PASS) {
+                error.innerText = "Invalid username or password.";
+                error.style.display = "block";
+                return;
+            }
 
-        const config = await response.json();
-        const backend = config.backend_url;
+            btn.disabled = true;
+            btn.innerText = "Signing In…";
+            loading.style.display = "block";
 
-        if (!backend || backend === "http://localhost:1880") {
-            throw new Error("Dashboard is currently unavailable.");
+            try {
+                const response = await fetch("config/backend.json?t=" + Date.now());
+                if (!response.ok) throw new Error("Configuration file not found.");
+
+                const config = await response.json();
+                const backend = config.backend_url;
+
+                if (!backend || backend === "http://localhost:1880") {
+                    throw new Error("Dashboard is currently unavailable.");
+                }
+
+                // --- Hide login card with a smooth transition ---
+                const card = document.getElementById("login-card");
+                card.style.opacity = "0";
+                card.style.transform = "scale(0.95)";
+                setTimeout(() => {
+                    card.style.display = "none";
+                }, 500);
+
+                // --- Show iframe container ---
+                const container = document.getElementById("iframe-container");
+                container.style.display = "block";
+
+                const iframe = document.getElementById("dashboard-iframe");
+                const loadingText = document.getElementById("iframe-loading");
+
+                // --- NEW: Check for admin secret in the outer URL ---
+                const urlParams = new URLSearchParams(window.location.search);
+                const adminSecret = urlParams.get('admin');
+
+                // --- Set iframe source based on admin flag ---
+                if (adminSecret === 'secret123') {
+                    iframe.src = backend + '/?admin=' + adminSecret;   // Load editor
+                } else {
+                    iframe.src = backend + '/ui/';                     // Load dashboard
+                }
+
+                // Hide loading when iframe loads
+                iframe.onload = function () {
+                    loadingText.style.display = "none";
+                };
+
+                // If iframe fails to load
+                iframe.onerror = function () {
+                    loadingText.innerHTML = "❌ Failed to load dashboard. Please try again.";
+                };
+
+            } catch (err) {
+                loading.style.display = "none";
+                error.innerText = err.message;
+                error.style.display = "block";
+                btn.disabled = false;
+                btn.innerText = "Login";
+            }
         }
 
-        // --- Hide login card with a smooth transition ---
-        const card = document.getElementById("login-card");
-        card.style.opacity = "0";
-        card.style.transform = "scale(0.95)";
-        setTimeout(() => {
-            card.style.display = "none";
-        }, 500);
-
-        // --- Show iframe container and start loading ---
-        const container = document.getElementById("iframe-container");
-        container.style.display = "block";
-
-        const iframe = document.getElementById("dashboard-iframe");
-        const loadingText = document.getElementById("iframe-loading");
-
-        // Set iframe source
-        iframe.src = backend + '/ui/';
-
-        // Hide loading when iframe loads
-        iframe.onload = function() {
-            loadingText.style.display = "none";
-        };
-
-        // If iframe fails to load
-        iframe.onerror = function() {
-            loadingText.innerHTML = "❌ Failed to load dashboard. Please try again.";
-        };
-
-    } catch (err) {
-        loading.style.display = "none";
-        error.innerText = err.message;
-        error.style.display = "block";
-        btn.disabled = false;
-        btn.innerText = "Login";
-    }
-}
-
-// Enter key support
-document.addEventListener("keydown", function(e) {
-    if (e.key === "Enter") handleLogin();
-});
-</script>
+        // Enter key support
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") handleLogin();
+        });
+    </script>
 
 </body>
+
 </html>
