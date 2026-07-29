@@ -3,49 +3,62 @@ const httpProxy = require('http-proxy');
 const url = require('url');
 
 // Configuration
-const TARGET = 'http://localhost:1880';          // Where Node‑RED is running
-const PROXY_PORT = 1881;                         // Port the proxy listens on
-const SECRET = 'secret123';          // CHANGE THIS to a strong secret
+const TARGET = 'http://localhost:1880';
+const PROXY_PORT = 1881;
+const SECRET = 'secret123';   // CHANGE THIS
 
-// Create proxy instance (with WebSocket support)
+// Allowed origins for framing (GitHub Pages domains)
+const ALLOWED_FRAME_ANCESTORS = [
+  'https://yapweixuan1.github.io',
+  'https://*.github.io'       // allows all GitHub Pages subdomains (optional)
+];
+
+// Create proxy instance
 const proxy = httpProxy.createProxyServer({ target: TARGET, ws: true });
+
+// Modify response headers to allow framing
+proxy.on('proxyRes', (proxyRes, req, res) => {
+  // Remove X-Frame-Options entirely
+  proxyRes.headers['x-frame-options'] = '';
+  // Remove or override X-Frame-Options if present
+  delete proxyRes.headers['x-frame-options'];
+
+  // Add Content-Security-Policy to allow framing from allowed origins
+  const frameAncestors = ALLOWED_FRAME_ANCESTORS.join(' ');
+  const csp = `frame-ancestors ${frameAncestors};`;
+  // Merge with any existing CSP (if any)
+  const existingCsp = proxyRes.headers['content-security-policy'] || '';
+  proxyRes.headers['content-security-policy'] = existingCsp + csp;
+});
 
 // Main HTTP server
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // ----- Protection for Node‑RED admin routes -----
   if (pathname === '/' || pathname === '/flows') {
-    // Check if the admin secret is present in the query string
     if (parsedUrl.query.admin === SECRET) {
-      // 🟢 Admin access allowed – forward the request to Node‑RED
-      // (optional: we could strip the secret here, but it's harmless)
       proxy.web(req, res);
       return;
     }
 
-    // 🔴 Regular users:
     if (pathname === '/') {
-      // Redirect root to the dashboard UI
       res.writeHead(302, { Location: '/ui/' });
       res.end();
       return;
     }
 
     if (pathname === '/flows') {
-      // Block access to the flow editor
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('Access Denied');
       return;
     }
   }
 
-  // ----- All other paths (e.g., /ui, static assets, WebSocket handshakes) -----
   proxy.web(req, res);
 });
 
-// Handle WebSocket upgrades (for Node‑RED's live editing and dashboard)
+// WebSocket upgrade
 server.on('upgrade', (req, socket, head) => {
   proxy.ws(req, socket, head);
 });
@@ -59,9 +72,8 @@ proxy.on('error', (err, req, res) => {
   }
 });
 
-// Start the proxy
 server.listen(PROXY_PORT, () => {
   console.log(`🚀 Proxy running on http://localhost:${PROXY_PORT} -> ${TARGET}`);
-  console.log(`Root / is redirected to /ui/.`);
-  console.log(`🔑 Admin access: add ?admin=${SECRET} to the URL to see the flow editor.`);
+  console.log(`🔑 Admin secret: ?admin=${SECRET}`);
+  console.log(`🖼️  IFrame embedding allowed for: ${ALLOWED_FRAME_ANCESTORS.join(', ')}`);
 });
