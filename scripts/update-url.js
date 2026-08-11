@@ -4,8 +4,8 @@ const path = require('path');
 const axios = require('axios');
 require('dotenv').config();
 
-const CONFIG_PATH = path.join(__dirname, 'config', 'backend.json');
-const LOG_FILE = path.join(__dirname, 'tunnel.log');
+const CONFIG_PATH = path.join(__dirname, '..', 'config', 'backend.json');
+const LOG_FILE = path.join(__dirname, '..', 'tunnel.log');
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO_OWNER = 'YapWeiXuan1';          // change

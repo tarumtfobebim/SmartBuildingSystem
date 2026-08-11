@@ -140,7 +140,7 @@ Run these components on the Windows machine that hosts Node-RED:
 ### Start the proxy
 
 ```bash
-node proxy-server.js
+node scripts/proxy-server.js
 ```
 
 The proxy listens on `http://localhost:1881` and forwards to Node-RED at `http://localhost:1880`.
@@ -148,7 +148,7 @@ The proxy listens on `http://localhost:1881` and forwards to Node-RED at `http:/
 ### Start the URL watcher
 
 ```bash
-node update-url.js
+node scripts/update-url.js
 ```
 
 This script watches `tunnel.log`, finds the latest `trycloudflare.com` URL, writes it to `config/backend.json`, and pushes the updated file to GitHub if `GITHUB_TOKEN` is set.
@@ -176,8 +176,8 @@ npm install -g pm2
 ### Start the services with PM2
 
 ```bash
-pm2 start update-url.js --name url-watcher
-pm2 start proxy-server.js --name proxy-server
+pm2 start scripts/update-url.js --name url-watcher
+pm2 start scripts/proxy-server.js --name proxy-server
 pm2 start .\cloudflared.exe --name cloudflared-tunnel -- tunnel --url http://localhost:1881 --logfile tunnel.log
 pm2 save
 ```
