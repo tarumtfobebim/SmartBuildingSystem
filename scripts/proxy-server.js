@@ -4,8 +4,8 @@ const url = require('url');
 require('dotenv').config();
 
 // ---------- Configuration from .env with fallbacks ----------
-const TARGET = process.env.TARGET;
-const PROXY_PORT = parseInt(process.env.PROXY_PORT);
+const TARGET = process.env.TARGET || 'http://localhost:1880';
+const PROXY_PORT = parseInt(process.env.PROXY_PORT) || 1881;
 const SECRET = process.env.SECRET;
 
 // NEW: Read authentication credentials from .env
@@ -13,14 +13,17 @@ const AUTH_USER = process.env.AUTH_USER;
 const AUTH_PASS = process.env.AUTH_PASS;
 
 // Allowed origins for framing (GitHub Pages domains)
-// You can optionally read from .env as a comma-separated list:
-// const ALLOWED_FRAME_ANCESTORS = process.env.ALLOWED_FRAME_ANCESTORS
-//   ? process.env.ALLOWED_FRAME_ANCESTORS.split(',').map(s => s.trim())
-//   : ['https://yapweixuan1.github.io', 'https://*.github.io'];
 const ALLOWED_FRAME_ANCESTORS = [
   'https://yapweixuan1.github.io',
   'https://*.github.io'
 ];
+
+// ---------- CORS headers helper ----------
+function setCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
 
 // ---------- Proxy instance ----------
 const proxy = httpProxy.createProxyServer({ target: TARGET, ws: true });
@@ -39,6 +42,8 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
 
 // ---------- Authentication handler ----------
 const authHandler = (req, res) => {
+  setCorsHeaders(res); // Allow cross-origin access
+
   let body = '';
   req.on('data', chunk => { body += chunk; });
   req.on('end', () => {
@@ -63,7 +68,15 @@ const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // NEW: Handle authentication endpoint
+  // Handle CORS preflight (OPTIONS) for /auth
+  if (pathname === '/auth' && req.method === 'OPTIONS') {
+    setCorsHeaders(res);
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // Handle authentication endpoint
   if (pathname === '/auth' && req.method === 'POST') {
     authHandler(req, res);
     return;
