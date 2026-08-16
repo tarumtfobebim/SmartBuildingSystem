@@ -290,8 +290,18 @@
             loading.style.display = "block";
 
             try {
-                // 1. First, authenticate against the proxy
-                const authRes = await fetch("/auth", {
+                // 1. FIRST: Fetch the backend URL from GitHub Pages
+                const configRes = await fetch("config/backend.json?t=" + Date.now());
+                if (!configRes.ok) throw new Error("Configuration file not found.");
+                const config = await configRes.json();
+                const backend = config.backend_url;
+
+                if (!backend || backend === "http://localhost:1880") {
+                    throw new Error("Dashboard is currently unavailable.");
+                }
+
+                // 2. SECOND: Authenticate against the PROXY (using the tunnel URL)
+                const authRes = await fetch(backend + "/auth", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password })
@@ -299,15 +309,6 @@
                 const authData = await authRes.json();
                 if (!authData.success) {
                     throw new Error(authData.message || "Invalid credentials");
-                }
-
-                // 2. Fetch backend URL from GitHub Pages
-                const configRes = await fetch("config/backend.json?t=" + Date.now());
-                if (!configRes.ok) throw new Error("Configuration file not found.");
-                const config = await configRes.json();
-                const backend = config.backend_url;
-                if (!backend || backend === "http://localhost:1880") {
-                    throw new Error("Dashboard is currently unavailable.");
                 }
 
                 // --- Hide login card ---
