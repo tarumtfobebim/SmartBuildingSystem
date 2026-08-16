@@ -275,9 +275,6 @@
         gsap.to(".c2", { x: -40, y: -50, repeat: -1, yoyo: true, duration: 12, ease: "sine.inOut" });
         gsap.to(".c3", { y: 35, repeat: -1, yoyo: true, duration: 8, ease: "sine.inOut" });
 
-        const VALID_USER = "admin";
-        const VALID_PASS = "12345";
-
         async function handleLogin() {
             const username = document.getElementById("username").value.trim();
             const password = document.getElementById("password").value;
@@ -288,62 +285,55 @@
             loading.style.display = "none";
             error.style.display = "none";
 
-            if (username !== VALID_USER || password !== VALID_PASS) {
-                error.innerText = "Invalid username or password.";
-                error.style.display = "block";
-                return;
-            }
-
             btn.disabled = true;
             btn.innerText = "Signing In…";
             loading.style.display = "block";
 
             try {
-                const response = await fetch("config/backend.json?t=" + Date.now());
-                if (!response.ok) throw new Error("Configuration file not found.");
+                // 1. First, authenticate against the proxy
+                const authRes = await fetch("/auth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                const authData = await authRes.json();
+                if (!authData.success) {
+                    throw new Error(authData.message || "Invalid credentials");
+                }
 
-                const config = await response.json();
+                // 2. Fetch backend URL from GitHub Pages
+                const configRes = await fetch("config/backend.json?t=" + Date.now());
+                if (!configRes.ok) throw new Error("Configuration file not found.");
+                const config = await configRes.json();
                 const backend = config.backend_url;
-
                 if (!backend || backend === "http://localhost:1880") {
                     throw new Error("Dashboard is currently unavailable.");
                 }
 
-                // --- Hide login card with a smooth transition ---
+                // --- Hide login card ---
                 const card = document.getElementById("login-card");
                 card.style.opacity = "0";
                 card.style.transform = "scale(0.95)";
-                setTimeout(() => {
-                    card.style.display = "none";
-                }, 500);
+                setTimeout(() => { card.style.display = "none"; }, 500);
 
-                // --- Show iframe container ---
+                // --- Show iframe ---
                 const container = document.getElementById("iframe-container");
                 container.style.display = "block";
-
                 const iframe = document.getElementById("dashboard-iframe");
                 const loadingText = document.getElementById("iframe-loading");
 
-                // --- NEW: Check for admin secret in the outer URL ---
+                // Admin secret from URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const adminSecret = urlParams.get('admin');
 
-                // --- Set iframe source based on admin flag ---
                 if (adminSecret === 'secret123') {
-                    iframe.src = backend + '/?admin=' + adminSecret;   // Load editor
+                    iframe.src = backend + '/?admin=' + adminSecret;
                 } else {
-                    iframe.src = backend + '/ui/';                     // Load dashboard
+                    iframe.src = backend + '/ui/';
                 }
 
-                // Hide loading when iframe loads
-                iframe.onload = function () {
-                    loadingText.style.display = "none";
-                };
-
-                // If iframe fails to load
-                iframe.onerror = function () {
-                    loadingText.innerHTML = "❌ Failed to load dashboard. Please try again.";
-                };
+                iframe.onload = function () { loadingText.style.display = "none"; };
+                iframe.onerror = function () { loadingText.innerHTML = "❌ Failed to load dashboard."; };
 
             } catch (err) {
                 loading.style.display = "none";
@@ -353,6 +343,85 @@
                 btn.innerText = "Login";
             }
         }
+
+        // const VALID_USER = "admin";
+        // const VALID_PASS = "12345";
+
+        // async function handleLogin() {
+        //     const username = document.getElementById("username").value.trim();
+        //     const password = document.getElementById("password").value;
+        //     const loading = document.getElementById("loading");
+        //     const error = document.getElementById("login-error");
+        //     const btn = document.getElementById("loginBtn");
+
+        //     loading.style.display = "none";
+        //     error.style.display = "none";
+
+        //     if (username !== VALID_USER || password !== VALID_PASS) {
+        //         error.innerText = "Invalid username or password.";
+        //         error.style.display = "block";
+        //         return;
+        //     }
+
+        //     btn.disabled = true;
+        //     btn.innerText = "Signing In…";
+        //     loading.style.display = "block";
+
+        //     try {
+        //         const response = await fetch("config/backend.json?t=" + Date.now());
+        //         if (!response.ok) throw new Error("Configuration file not found.");
+
+        //         const config = await response.json();
+        //         const backend = config.backend_url;
+
+        //         if (!backend || backend === "http://localhost:1880") {
+        //             throw new Error("Dashboard is currently unavailable.");
+        //         }
+
+        //         // --- Hide login card with a smooth transition ---
+        //         const card = document.getElementById("login-card");
+        //         card.style.opacity = "0";
+        //         card.style.transform = "scale(0.95)";
+        //         setTimeout(() => {
+        //             card.style.display = "none";
+        //         }, 500);
+
+        //         // --- Show iframe container ---
+        //         const container = document.getElementById("iframe-container");
+        //         container.style.display = "block";
+
+        //         const iframe = document.getElementById("dashboard-iframe");
+        //         const loadingText = document.getElementById("iframe-loading");
+
+        //         // --- NEW: Check for admin secret in the outer URL ---
+        //         const urlParams = new URLSearchParams(window.location.search);
+        //         const adminSecret = urlParams.get('admin');
+
+        //         // --- Set iframe source based on admin flag ---
+        //         if (adminSecret === 'secret123') {
+        //             iframe.src = backend + '/?admin=' + adminSecret;   // Load editor
+        //         } else {
+        //             iframe.src = backend + '/ui/';                     // Load dashboard
+        //         }
+
+        //         // Hide loading when iframe loads
+        //         iframe.onload = function () {
+        //             loadingText.style.display = "none";
+        //         };
+
+        //         // If iframe fails to load
+        //         iframe.onerror = function () {
+        //             loadingText.innerHTML = "❌ Failed to load dashboard. Please try again.";
+        //         };
+
+        //     } catch (err) {
+        //         loading.style.display = "none";
+        //         error.innerText = err.message;
+        //         error.style.display = "block";
+        //         btn.disabled = false;
+        //         btn.innerText = "Login";
+        //     }
+        // }
 
         // Enter key support
         document.addEventListener("keydown", function (e) {

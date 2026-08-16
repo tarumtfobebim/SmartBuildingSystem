@@ -1,41 +1,75 @@
 const http = require('http');
 const httpProxy = require('http-proxy');
 const url = require('url');
+require('dotenv').config();
 
-// Configuration
-const TARGET = 'http://localhost:1880';
-const PROXY_PORT = 1881;
-const SECRET = 'secret123';   // CHANGE THIS
+// ---------- Configuration from .env with fallbacks ----------
+const TARGET = process.env.TARGET;
+const PROXY_PORT = parseInt(process.env.PROXY_PORT);
+const SECRET = process.env.SECRET;
+
+// NEW: Read authentication credentials from .env
+const AUTH_USER = process.env.AUTH_USER;
+const AUTH_PASS = process.env.AUTH_PASS;
 
 // Allowed origins for framing (GitHub Pages domains)
+// You can optionally read from .env as a comma-separated list:
+// const ALLOWED_FRAME_ANCESTORS = process.env.ALLOWED_FRAME_ANCESTORS
+//   ? process.env.ALLOWED_FRAME_ANCESTORS.split(',').map(s => s.trim())
+//   : ['https://yapweixuan1.github.io', 'https://*.github.io'];
 const ALLOWED_FRAME_ANCESTORS = [
   'https://yapweixuan1.github.io',
-  'https://*.github.io'       // allows all GitHub Pages subdomains (optional)
+  'https://*.github.io'
 ];
 
-// Create proxy instance
+// ---------- Proxy instance ----------
 const proxy = httpProxy.createProxyServer({ target: TARGET, ws: true });
 
-// Modify response headers to allow framing
+// ---------- Modify response headers to allow iframe embedding ----------
 proxy.on('proxyRes', (proxyRes, req, res) => {
   // Remove X-Frame-Options entirely
-  proxyRes.headers['x-frame-options'] = '';
-  // Remove or override X-Frame-Options if present
   delete proxyRes.headers['x-frame-options'];
 
-  // Add Content-Security-Policy to allow framing from allowed origins
+  // Add Content-Security-Policy with frame-ancestors
   const frameAncestors = ALLOWED_FRAME_ANCESTORS.join(' ');
   const csp = `frame-ancestors ${frameAncestors};`;
-  // Merge with any existing CSP (if any)
   const existingCsp = proxyRes.headers['content-security-policy'] || '';
   proxyRes.headers['content-security-policy'] = existingCsp + csp;
 });
 
-// Main HTTP server
+// ---------- Authentication handler ----------
+const authHandler = (req, res) => {
+  let body = '';
+  req.on('data', chunk => { body += chunk; });
+  req.on('end', () => {
+    try {
+      const { username, password } = JSON.parse(body);
+      if (username === AUTH_USER && password === AUTH_PASS) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } else {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: 'Invalid credentials' }));
+      }
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, message: 'Bad request' }));
+    }
+  });
+};
+
+// ---------- Main HTTP server ----------
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
+  // NEW: Handle authentication endpoint
+  if (pathname === '/auth' && req.method === 'POST') {
+    authHandler(req, res);
+    return;
+  }
+
+  // Admin secret for flow editor
   if (pathname === '/' || pathname === '/flows') {
     if (parsedUrl.query.admin === SECRET) {
       proxy.web(req, res);
@@ -58,12 +92,12 @@ const server = http.createServer((req, res) => {
   proxy.web(req, res);
 });
 
-// WebSocket upgrade
+// ---------- WebSocket upgrade ----------
 server.on('upgrade', (req, socket, head) => {
   proxy.ws(req, socket, head);
 });
 
-// Error handling
+// ---------- Error handling ----------
 proxy.on('error', (err, req, res) => {
   console.error('Proxy error:', err.message);
   if (res && !res.headersSent) {
@@ -72,8 +106,10 @@ proxy.on('error', (err, req, res) => {
   }
 });
 
+// ---------- Start server ----------
 server.listen(PROXY_PORT, () => {
   console.log(`🚀 Proxy running on http://localhost:${PROXY_PORT} -> ${TARGET}`);
   console.log(`🔑 Admin secret: ?admin=${SECRET}`);
-  console.log(`🖼️  IFrame embedding allowed for: ${ALLOWED_FRAME_ANCESTORS.join(', ')}`);
+  console.log(`👤 Auth: ${AUTH_USER} / ${AUTH_PASS.replace(/./g, '*')}`);
+  console.log(`🖼️  IFrame allowed for: ${ALLOWED_FRAME_ANCESTORS.join(', ')}`);
 });
