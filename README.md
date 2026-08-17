@@ -176,6 +176,7 @@ npm install -g pm2
 ### Start the services with PM2
 
 ```bash
+pm2 start node-red --name "node-red"
 pm2 start scripts/update-url.js --name url-watcher
 pm2 start scripts/proxy-server.js --name proxy-server
 pm2 start .\cloudflared.exe --name cloudflared-tunnel -- tunnel --url http://localhost:1881 --logfile tunnel.log
