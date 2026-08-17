@@ -12,9 +12,8 @@ const SECRET = process.env.SECRET;
 const AUTH_USER = process.env.AUTH_USER;
 const AUTH_PASS = process.env.AUTH_PASS;
 
-// Allowed origins for framing (GitHub Pages domains)
 const ALLOWED_FRAME_ANCESTORS = [
-  'https://yapweixuan1.github.io',
+  'https://tarumtfobebim.github.io',
   'https://*.github.io'
 ];
 
