@@ -198,6 +198,35 @@
             font-size: 12px;
         }
 
+        .logout-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 30;
+            display: none;
+            width: auto;
+            height: auto;
+            margin: 0;
+            padding: 8px 14px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: rgba(15, 23, 42, 0.65);
+            color: #e2e8f0;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
+            backdrop-filter: blur(10px);
+            opacity: 0.8;
+            transition: .2s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(30, 41, 59, 0.85);
+            opacity: 1;
+            transform: translateY(-1px);
+        }
+
         /* ===== NEW: IFrame container ===== */
         #iframe-container {
             display: none;
@@ -219,13 +248,113 @@
 
         #iframe-loading {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #d5dff3;
-            font-size: 18px;
+            inset: 0;
             z-index: 11;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background:
+                radial-gradient(circle at 50% 40%, rgba(37, 99, 235, 0.18), transparent 35%),
+                linear-gradient(135deg, #050816, #0b1225, #111827);
+            color: #ffffff;
             text-align: center;
+        }
+
+        .loading-spinner {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.10);
+            border-top-color: #38bdf8;
+            border-right-color: #2563eb;
+            animation: loadingSpin 1s linear infinite;
+            margin-bottom: 28px;
+        }
+
+        .loading-title {
+            font-size: 23px;
+            font-weight: 600;
+            margin-bottom: 9px;
+        }
+
+        .loading-subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .loading-status {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            color: #cbd5e1;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        .loading-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, .8);
+            animation: loadingPulse 1.5s ease-in-out infinite;
+        }
+
+        .loading-progress {
+            width: 250px;
+            height: 3px;
+            overflow: hidden;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .08);
+        }
+
+        .loading-progress-bar {
+            width: 35%;
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #38bdf8, #2563eb);
+            box-shadow: 0 0 12px rgba(56, 189, 248, .5);
+            animation: loadingProgress 2s ease-in-out infinite;
+        }
+
+        .loading-secure {
+            margin-top: 25px;
+            color: #64748b;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        @keyframes loadingSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes loadingPulse {
+
+            0%,
+            100% {
+                opacity: .35;
+                transform: scale(.8);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes loadingProgress {
+            0% {
+                transform: translateX(-150%);
+            }
+
+            100% {
+                transform: translateX(400%);
+            }
         }
     </style>
 </head>
@@ -262,10 +391,35 @@
         <div class="footer">Secure Dashboard Access</div>
     </div>
 
+    <button id="logoutBtn" class="logout-btn" type="button" onclick="logout()">Logout</button>
+
     <!-- IFrame container (hidden initially) -->
     <div id="iframe-container">
-        <div id="iframe-loading">⏳ Loading dashboard…</div>
-        <iframe id="dashboard-iframe" src="" allow="same-origin"></iframe>
+        <div id="iframe-loading">
+            <div class="loading-spinner"></div>
+
+            <div class="loading-title">
+                Preparing your dashboard
+            </div>
+
+            <div class="loading-subtitle">
+                Establishing a secure connection
+            </div>
+
+            <div class="loading-status">
+                <span class="loading-dot"></span>
+                <span>Connecting to dashboard...</span>
+            </div>
+
+            <div class="loading-progress">
+                <div class="loading-progress-bar"></div>
+            </div>
+
+            <div class="loading-secure">
+                Smart Building • Secure Connection
+            </div>
+        </div>
+        <iframe id="dashboard-iframe" src=""></iframe>
     </div>
 
     <script>
@@ -274,6 +428,117 @@
         gsap.to(".c1", { x: 50, y: 30, repeat: -1, yoyo: true, duration: 10, ease: "sine.inOut" });
         gsap.to(".c2", { x: -40, y: -50, repeat: -1, yoyo: true, duration: 12, ease: "sine.inOut" });
         gsap.to(".c3", { y: 35, repeat: -1, yoyo: true, duration: 8, ease: "sine.inOut" });
+
+        const AUTH_TOKEN_KEY = "smart-building-auth-token";
+
+        function showLoginForm() {
+            const card = document.getElementById("login-card");
+            const container = document.getElementById("iframe-container");
+            const iframe = document.getElementById("dashboard-iframe");
+            const logoutBtn = document.getElementById("logoutBtn");
+            const loading = document.getElementById("loading");
+            const error = document.getElementById("login-error");
+
+            loading.style.display = "none";
+            error.style.display = "none";
+            iframe.src = "";
+            container.style.display = "none";
+            logoutBtn.style.display = "none";
+
+            card.style.display = "block";
+            card.style.opacity = "1";
+            card.style.transform = "scale(1)";
+        }
+
+        function logout() {
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            document.getElementById("username").value = "";
+            document.getElementById("password").value = "";
+            showLoginForm();
+        }
+
+        async function getBackendUrl() {
+            const configRes = await fetch("config/backend.json?t=" + Date.now());
+            if (!configRes.ok) throw new Error("Configuration file not found.");
+            const config = await configRes.json();
+            const backend = config.backend_url;
+            if (!backend || backend === "http://localhost:1880") {
+                throw new Error("Dashboard is currently unavailable.");
+            }
+            return backend;
+        }
+
+        function showDashboard(backend) {
+            document.getElementById("login-card").style.display = "none";
+            document.getElementById("iframe-container").style.display = "block";
+            document.getElementById("logoutBtn").style.display = "block";
+
+            const iframe = document.getElementById("dashboard-iframe");
+            const loadingText = document.getElementById("iframe-loading");
+            const adminSecret = new URLSearchParams(window.location.search).get("admin");
+            iframe.src = adminSecret === "secret123"
+                ? backend + "/?admin=" + encodeURIComponent(adminSecret)
+                : backend + "/ui/";
+            iframe.onload = function () { loadingText.style.display = "none"; };
+            iframe.onerror = function () { loadingText.textContent = "Failed to load dashboard."; };
+        }
+
+        function reloadDashboard() {
+            const iframe = document.getElementById("dashboard-iframe");
+
+            if (!iframe || !iframe.src || iframe.src === window.location.href) {
+                return;
+            }
+
+            // Do nothing if user is currently on login page
+            const container = document.getElementById("iframe-container");
+
+            if (container.style.display === "none") {
+                return;
+            }
+
+            console.log("Reloading dashboard iframe...");
+
+            const url = new URL(iframe.src);
+
+            // Force a fresh iframe navigation
+            url.searchParams.set("reconnect", Date.now());
+
+            iframe.src = url.toString();
+        }
+
+
+        // Reload dashboard when the browser regains network connection
+        window.addEventListener("online", function () {
+            console.log("Network restored. Reconnecting dashboard...");
+            reloadDashboard();
+        });
+
+
+        // Refresh dashboard connection every 30 minutes
+        setInterval(function () {
+            console.log("Scheduled dashboard reconnection...");
+            reloadDashboard();
+        }, 30 * 60 * 1000);
+
+        async function restoreSession() {
+            const token = localStorage.getItem(AUTH_TOKEN_KEY);
+            if (!token) return;
+
+            try {
+                const backend = await getBackendUrl();
+                const response = await fetch(backend + "/auth/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error("Session expired");
+                showDashboard(backend);
+            } catch (_) {
+                localStorage.removeItem(AUTH_TOKEN_KEY);
+            }
+        }
 
         async function handleLogin() {
             const username = document.getElementById("username").value.trim();
@@ -291,14 +556,7 @@
 
             try {
                 // 1. FIRST: Fetch the backend URL from GitHub Pages
-                const configRes = await fetch("config/backend.json?t=" + Date.now());
-                if (!configRes.ok) throw new Error("Configuration file not found.");
-                const config = await configRes.json();
-                const backend = config.backend_url;
-
-                if (!backend || backend === "http://localhost:1880") {
-                    throw new Error("Dashboard is currently unavailable.");
-                }
+                const backend = await getBackendUrl();
 
                 // 2. SECOND: Authenticate against the PROXY (using the tunnel URL)
                 const authRes = await fetch(backend + "/auth", {
@@ -311,30 +569,9 @@
                     throw new Error(authData.message || "Invalid credentials");
                 }
 
-                // --- Hide login card ---
-                const card = document.getElementById("login-card");
-                card.style.opacity = "0";
-                card.style.transform = "scale(0.95)";
-                setTimeout(() => { card.style.display = "none"; }, 500);
+                localStorage.setItem(AUTH_TOKEN_KEY, authData.token);
 
-                // --- Show iframe ---
-                const container = document.getElementById("iframe-container");
-                container.style.display = "block";
-                const iframe = document.getElementById("dashboard-iframe");
-                const loadingText = document.getElementById("iframe-loading");
-
-                // Admin secret from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const adminSecret = urlParams.get('admin');
-
-                if (adminSecret === 'secret123') {
-                    iframe.src = backend + '/?admin=' + adminSecret;
-                } else {
-                    iframe.src = backend + '/ui/';
-                }
-
-                iframe.onload = function () { loadingText.style.display = "none"; };
-                iframe.onerror = function () { loadingText.innerHTML = "❌ Failed to load dashboard."; };
+                showDashboard(backend);
 
             } catch (err) {
                 loading.style.display = "none";
@@ -345,89 +582,12 @@
             }
         }
 
-        // const VALID_USER = "admin";
-        // const VALID_PASS = "12345";
-
-        // async function handleLogin() {
-        //     const username = document.getElementById("username").value.trim();
-        //     const password = document.getElementById("password").value;
-        //     const loading = document.getElementById("loading");
-        //     const error = document.getElementById("login-error");
-        //     const btn = document.getElementById("loginBtn");
-
-        //     loading.style.display = "none";
-        //     error.style.display = "none";
-
-        //     if (username !== VALID_USER || password !== VALID_PASS) {
-        //         error.innerText = "Invalid username or password.";
-        //         error.style.display = "block";
-        //         return;
-        //     }
-
-        //     btn.disabled = true;
-        //     btn.innerText = "Signing In…";
-        //     loading.style.display = "block";
-
-        //     try {
-        //         const response = await fetch("config/backend.json?t=" + Date.now());
-        //         if (!response.ok) throw new Error("Configuration file not found.");
-
-        //         const config = await response.json();
-        //         const backend = config.backend_url;
-
-        //         if (!backend || backend === "http://localhost:1880") {
-        //             throw new Error("Dashboard is currently unavailable.");
-        //         }
-
-        //         // --- Hide login card with a smooth transition ---
-        //         const card = document.getElementById("login-card");
-        //         card.style.opacity = "0";
-        //         card.style.transform = "scale(0.95)";
-        //         setTimeout(() => {
-        //             card.style.display = "none";
-        //         }, 500);
-
-        //         // --- Show iframe container ---
-        //         const container = document.getElementById("iframe-container");
-        //         container.style.display = "block";
-
-        //         const iframe = document.getElementById("dashboard-iframe");
-        //         const loadingText = document.getElementById("iframe-loading");
-
-        //         // --- NEW: Check for admin secret in the outer URL ---
-        //         const urlParams = new URLSearchParams(window.location.search);
-        //         const adminSecret = urlParams.get('admin');
-
-        //         // --- Set iframe source based on admin flag ---
-        //         if (adminSecret === 'secret123') {
-        //             iframe.src = backend + '/?admin=' + adminSecret;   // Load editor
-        //         } else {
-        //             iframe.src = backend + '/ui/';                     // Load dashboard
-        //         }
-
-        //         // Hide loading when iframe loads
-        //         iframe.onload = function () {
-        //             loadingText.style.display = "none";
-        //         };
-
-        //         // If iframe fails to load
-        //         iframe.onerror = function () {
-        //             loadingText.innerHTML = "❌ Failed to load dashboard. Please try again.";
-        //         };
-
-        //     } catch (err) {
-        //         loading.style.display = "none";
-        //         error.innerText = err.message;
-        //         error.style.display = "block";
-        //         btn.disabled = false;
-        //         btn.innerText = "Login";
-        //     }
-        // }
-
         // Enter key support
         document.addEventListener("keydown", function (e) {
             if (e.key === "Enter") handleLogin();
         });
+
+        restoreSession();
     </script>
 
 </body>

@@ -1,6 +1,7 @@
 const http = require('http');
 const httpProxy = require('http-proxy');
 const url = require('url');
+const crypto = require('crypto');
 require('dotenv').config();
 
 // ---------- Configuration from .env with fallbacks ----------
@@ -11,7 +12,42 @@ const SECRET = process.env.SECRET;
 // NEW: Read authentication credentials from .env
 const AUTH_USER = process.env.AUTH_USER;
 const AUTH_PASS = process.env.AUTH_PASS;
+const AUTH_TOKEN_SECRET = process.env.AUTH_TOKEN_SECRET || SECRET || `${AUTH_USER}:${AUTH_PASS}`;
+const AUTH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+function createAuthToken() {
+  const payload = Buffer.from(JSON.stringify({
+    exp: Math.floor(Date.now() / 1000) + AUTH_TOKEN_TTL_SECONDS
+  })).toString('base64url');
+  const signature = crypto.createHmac('sha256', AUTH_TOKEN_SECRET)
+    .update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function isValidAuthToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  const [payload, signature] = token.split('.');
+  if (!payload || !signature) return false;
+
+  const expected = crypto.createHmac('sha256', AUTH_TOKEN_SECRET)
+    .update(payload).digest();
+  let supplied;
+  try {
+    supplied = Buffer.from(signature, 'base64url');
+  } catch (_) {
+    return false;
+  }
+  if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) return false;
+
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return Number.isFinite(data.exp) && data.exp > Math.floor(Date.now() / 1000);
+  } catch (_) {
+    return false;
+  }
+}
+
+// Allowed origins for framing (GitHub Pages domains)
 const ALLOWED_FRAME_ANCESTORS = [
   'https://tarumtfobebim.github.io',
   'https://*.github.io'
@@ -21,7 +57,8 @@ const ALLOWED_FRAME_ANCESTORS = [
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '86400');
 }
 
 // ---------- Proxy instance ----------
@@ -29,8 +66,15 @@ const proxy = httpProxy.createProxyServer({ target: TARGET, ws: true });
 
 // ---------- Modify response headers to allow iframe embedding ----------
 proxy.on('proxyRes', (proxyRes, req, res) => {
+  setCorsHeaders(res);
+
   // Remove X-Frame-Options entirely
   delete proxyRes.headers['x-frame-options'];
+
+  // Add CORS headers to upstream response too
+  proxyRes.headers['access-control-allow-origin'] = '*';
+  proxyRes.headers['access-control-allow-methods'] = 'GET, POST, OPTIONS';
+  proxyRes.headers['access-control-allow-headers'] = 'Content-Type, Authorization, X-Requested-With';
 
   // Add Content-Security-Policy with frame-ancestors
   const frameAncestors = ALLOWED_FRAME_ANCESTORS.join(' ');
@@ -50,7 +94,7 @@ const authHandler = (req, res) => {
       const { username, password } = JSON.parse(body);
       if (username === AUTH_USER && password === AUTH_PASS) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
+        res.end(JSON.stringify({ success: true, token: createAuthToken() }));
       } else {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, message: 'Invalid credentials' }));
@@ -62,22 +106,46 @@ const authHandler = (req, res) => {
   });
 };
 
+const verifyAuthHandler = (req, res) => {
+  setCorsHeaders(res);
+  let body = '';
+  req.on('data', chunk => { body += chunk; });
+  req.on('end', () => {
+    try {
+      const { token } = JSON.parse(body);
+      const valid = isValidAuthToken(token);
+      res.writeHead(valid ? 200 : 401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: valid }));
+    } catch (_) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, message: 'Bad request' }));
+    }
+  });
+};
+
 // ---------- Main HTTP server ----------
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // Handle CORS preflight (OPTIONS) for /auth
-  if (pathname === '/auth' && req.method === 'OPTIONS') {
+  // Handle CORS preflight for auth and any proxied endpoint
+  if (req.method === 'OPTIONS') {
     setCorsHeaders(res);
     res.writeHead(200);
     res.end();
     return;
   }
 
+  setCorsHeaders(res);
+
   // Handle authentication endpoint
   if (pathname === '/auth' && req.method === 'POST') {
     authHandler(req, res);
+    return;
+  }
+
+  if (pathname === '/auth/verify' && req.method === 'POST') {
+    verifyAuthHandler(req, res);
     return;
   }
 
