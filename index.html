@@ -483,16 +483,17 @@
             iframe.onerror = function () { loadingText.textContent = "Failed to load dashboard."; };
         }
 
+        let backendWasUnavailable = false;
+
         function reloadDashboard() {
             const iframe = document.getElementById("dashboard-iframe");
+            const container = document.getElementById("iframe-container");
 
-            if (!iframe || !iframe.src || iframe.src === window.location.href) {
+            if (!iframe || !iframe.src) {
                 return;
             }
 
-            // Do nothing if user is currently on login page
-            const container = document.getElementById("iframe-container");
-
+            // Do nothing while user is logged out
             if (container.style.display === "none") {
                 return;
             }
@@ -501,25 +502,59 @@
 
             const url = new URL(iframe.src);
 
-            // Force a fresh iframe navigation
+            // Force a fresh request instead of reusing old iframe state
             url.searchParams.set("reconnect", Date.now());
 
             iframe.src = url.toString();
         }
 
 
-        // Reload dashboard when the browser regains network connection
+        async function checkDashboardHealth() {
+            const container = document.getElementById("iframe-container");
+
+            // No need to check while user is logged out
+            if (container.style.display === "none") {
+                return;
+            }
+
+            try {
+                const backend = await getBackendUrl();
+
+                await fetch(
+                    backend + "/ui/?health=" + Date.now(),
+                    {
+                        method: "GET",
+                        mode: "no-cors",
+                        cache: "no-store"
+                    }
+                );
+
+                // Backend was previously unavailable but is now reachable
+                if (backendWasUnavailable) {
+                    console.log("Dashboard backend recovered. Reloading iframe...");
+                    backendWasUnavailable = false;
+                    reloadDashboard();
+                }
+
+            } catch (error) {
+                console.warn("Dashboard backend unavailable.");
+
+                backendWasUnavailable = true;
+            }
+        }
+
+
+        // If browser detects network recovery, reload immediately
         window.addEventListener("online", function () {
             console.log("Network restored. Reconnecting dashboard...");
             reloadDashboard();
         });
 
 
-        // Refresh dashboard connection every 30 minutes
+        // Lightweight health check every 60 seconds
         setInterval(function () {
-            console.log("Scheduled dashboard reconnection...");
-            reloadDashboard();
-        }, 30 * 60 * 1000);
+            checkDashboardHealth();
+        }, 10 * 60 * 1000);
 
         async function restoreSession() {
             const token = localStorage.getItem(AUTH_TOKEN_KEY);
