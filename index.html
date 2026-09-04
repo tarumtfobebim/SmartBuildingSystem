@@ -498,11 +498,9 @@
                 return;
             }
 
-            console.log("Reloading dashboard iframe...");
-
             const url = new URL(iframe.src);
 
-            // Force a fresh request instead of reusing old iframe state
+            // Force a fresh iframe navigation
             url.searchParams.set("reconnect", Date.now());
 
             iframe.src = url.toString();
@@ -512,7 +510,6 @@
         async function checkDashboardHealth() {
             const container = document.getElementById("iframe-container");
 
-            // No need to check while user is logged out
             if (container.style.display === "none") {
                 return;
             }
@@ -529,32 +526,43 @@
                     }
                 );
 
-                // Backend was previously unavailable but is now reachable
+                // Only log when backend has recovered
                 if (backendWasUnavailable) {
-                    console.log("Dashboard backend recovered. Reloading iframe...");
+                    console.log("Dashboard backend recovered. Reloading iframe.");
+
                     backendWasUnavailable = false;
                     reloadDashboard();
                 }
 
             } catch (error) {
-                console.warn("Dashboard backend unavailable.");
+
+                // Only log once when backend first becomes unavailable
+                if (!backendWasUnavailable) {
+                    console.warn("Dashboard backend unavailable.");
+                }
 
                 backendWasUnavailable = true;
             }
         }
 
 
-        // If browser detects network recovery, reload immediately
+        // Browser/network comes back online
         window.addEventListener("online", function () {
-            console.log("Network restored. Reconnecting dashboard...");
+            console.log("Network restored. Reconnecting dashboard.");
             reloadDashboard();
         });
 
 
-        // Lightweight health check every 60 seconds
+        // Health check every 10 minutes
         setInterval(function () {
             checkDashboardHealth();
-        }, 10 * 60 * 1000);
+        }, 30 * 60 * 1000);
+
+
+        // Force iframe reconnection every 3 hours
+        setInterval(function () {
+            reloadDashboard();
+        }, 3 * 60 * 60 * 1000);
 
         async function restoreSession() {
             const token = localStorage.getItem(AUTH_TOKEN_KEY);
