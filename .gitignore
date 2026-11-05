@@ -1,3 +1,5 @@
 .env
 node_modules/
 tunnel.log
+serviceAccountKey.json
+deltaohm-browser-profile/

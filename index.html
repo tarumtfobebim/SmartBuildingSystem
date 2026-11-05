@@ -559,10 +559,10 @@
         }, 30 * 60 * 1000);
 
 
-        // Force iframe reconnection every 3 hours
+        // Force iframe reconnection every 5 hours
         setInterval(function () {
             reloadDashboard();
-        }, 3 * 60 * 60 * 1000);
+        }, 5 * 60 * 60 * 1000);
 
         async function restoreSession() {
             const token = localStorage.getItem(AUTH_TOKEN_KEY);

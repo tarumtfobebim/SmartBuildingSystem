@@ -10,8 +10,6 @@ const LOG_FILE = path.join(__dirname, '..', 'tunnel.log');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO_OWNER = process.env.REPO_OWNER;
 const REPO_NAME = process.env.REPO_NAME ;
-// const REPO_OWNER = 'YapWeiXuan1';          // change
-// const REPO_NAME = 'SmartBuildingSystem';     // change
 const FILE_PATH = 'config/backend.json';
 
 let lastUrl = null;

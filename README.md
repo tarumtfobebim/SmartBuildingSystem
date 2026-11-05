@@ -176,6 +176,7 @@ npm install -g pm2
 ### Start the services with PM2
 
 ```bash
+cd /d D:\SmartBuildingSystem
 pm2 start node-red --name node-red
 pm2 start scripts/update-url.js --name url-watcher
 pm2 start scripts/proxy-server.js --name proxy-server
@@ -188,8 +189,19 @@ pm2 save
 Create a task that runs PM2 when the user signs in. One example is:
 
 ```bash
-schtasks /create /tn "PM2 Startup" /tr "C:\Users\YOUR_USERNAME\AppData\Roaming\npm\pm2.cmd resurrect" /sc onlogon /ru YOUR_USERNAME /rl HIGHEST /f
+schtasks /create /tn "PM2 Starturp" /tr "C:\Users\YOUR_USERNAME\AppData\Roaming\npm\pm2.cmd resurrect" /sc onlogon /ru YOUR_USERNAME /rl HIGHEST /f
 ```
+Press Win + R, type shell:startup, and press Enter.
+
+Create a new shortcut:
+
+Right-click → New → Shortcut.
+
+Location: C:\Users\PC12\AppData\Roaming\npm\pm2.cmd resurrect
+
+Name: PM2 Startup
+
+Click Finish.
 
 If you prefer, you can change the command to `pm2 start` or another startup command that matches your workflow.
 

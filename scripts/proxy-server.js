@@ -49,6 +49,7 @@ function isValidAuthToken(token) {
 
 // Allowed origins for framing (GitHub Pages domains)
 const ALLOWED_FRAME_ANCESTORS = [
+  "'self'",
   'https://tarumtfobebim.github.io',
   'https://*.github.io'
 ];
