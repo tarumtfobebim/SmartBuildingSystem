@@ -1,7 +1,7 @@
 const puppeteer = require("puppeteer");
 
 const path = require("path");
-
+process.loadEnvFile(path.join(__dirname, "..", ".env"));
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 
@@ -100,15 +100,116 @@ async function main() {
         }
     );
 
+    const loginForm = await page.waitForSelector(
+        ".login-panel #username",
+        { visible: true, timeout: 15000 }
+    ).catch(error => {
+        if (error.name === "TimeoutError") {
+            return null;
+        }
+
+        throw error;
+    });
+
+    if (loginForm) {
+        const username = process.env.DELTA_OHM_USERNAME;
+        const password = process.env.DELTA_OHM_PASSWORD;
+
+        if (username && password) {
+            await page.waitForSelector("#password", { visible: true });
+
+            // Clear any existing text before filling each field.
+            await page.click("#username", { clickCount: 3 });
+            await page.keyboard.press("Backspace");
+            await page.type("#username", username);
+
+            await page.click("#password", { clickCount: 3 });
+            await page.keyboard.press("Backspace");
+            await page.type("#password", password);
+
+            // Remove this line if you want auto-fill only.
+            await page.click("#sign_in");
+
+            console.log("[STEP] Delta OHM login submitted.");
+        } else {
+            console.log("[STEP] Login credentials are missing. Please log in manually.");
+        }
+    }
 
     console.log("[STEP] Browser opened.");
     console.log("[STEP] 1. Login if necessary.");
-    console.log("[STEP] 2. Open TAR-UMT visualization.");
+    console.log("[STEP] 2. Open TAR-UMT visualization if needed.");
     console.log("[STEP] 3. Keep visualization open.");
     console.log(
         `[STEP] Checking sensor values every ${READ_INTERVAL / 1000} seconds...`
     );
 
+    // 1. Wait for the device table and select the TAR-UMT station.
+    const stationHandle = await page.waitForFunction(
+        (serial, name) => {
+            return Array.from(document.querySelectorAll("tr.v-table-row"))
+                .find(row => {
+                    if (row.getClientRects().length === 0) {
+                        return false;
+                    }
+
+                    const cells = Array.from(
+                        row.cells,
+                        cell => cell.textContent.trim()
+                    );
+
+                    return cells.includes(serial) && cells.includes(name);
+                });
+        },
+        { timeout: 60000 },
+        "23019837",
+        "HD33LMT.4 - TAR-UMT"
+    );
+
+    const stationRow = stationHandle.asElement();
+    const alreadySelected = await stationRow.evaluate(
+        row => row.classList.contains("v-selected")
+    );
+
+    if (!alreadySelected) {
+        await stationRow.click();
+    }
+
+    await stationHandle.dispose();
+
+    // 2. Expand Visualizations if the target link is hidden.
+    const visualizationsSelector =
+        `a[href="javascript:toggle_visibility('visualizations');"]`;
+
+    const tarUmtVisualizationSelector =
+        `a[href*="device_groupwidget_event('23019837','32837456-6cee-4124-86fb-c4b30306623a')"]`;
+
+    await page.waitForSelector(visualizationsSelector, { visible: true });
+
+    const visualizationVisible = await page.$eval(
+        tarUmtVisualizationSelector,
+        link => {
+            const style = window.getComputedStyle(link);
+            return link.getClientRects().length > 0 &&
+                style.visibility === "visible";
+        }
+    ).catch(error => {
+        if (error.message.includes("failed to find element matching selector")) {
+            return false;
+        }
+
+        throw error;
+    });
+
+    if (!visualizationVisible) {
+        await page.click(visualizationsSelector);
+    }
+
+    // 3. Open TAR-UMT Tun Tan Siew Sin.
+    await page.waitForSelector(tarUmtVisualizationSelector, { visible: true });
+    await page.click(tarUmtVisualizationSelector);
+
+    console.log("[STEP] Clicked TAR-UMT Tun Tan Siew Sin visualization.");
 
     // -----------------------------------------------------
     // Store previous reading
